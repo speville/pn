@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PostNord 🔵</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔵</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background: linear-gradient(135deg, #ffffff, #f8fafc);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:16px;
+  }
+  .app{
+    background:#ffffff;
+    padding:24px;
+    border-radius:20px;
+    width:400px;
+    box-shadow:0 8px 32px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02);
+    border:1px solid rgba(0,160,214,.15);
+  }
+  h1{
+    margin:0 0 4px;
+    font-size:24px;
+    font-weight:800;
+    color:#00A0D6;
+    background: linear-gradient(135deg, #00A0D6, #0088cc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align:center;
+  }
+  .subtitle{
+    color:rgba(26,26,26,.65);
+    font-size:13px;
+    text-align:center;
+    margin-bottom:20px;
+    font-weight:500;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  input{
+    width:100%;
+    padding:12px 14px;
+    border-radius:12px;
+    border:2px solid rgba(0,160,214,.2);
+    background:#f8fafc;
+    font-size:15px;
+    outline:none;
+    transition: all 0.2s ease;
+  }
+  input:focus{
+    border-color:#00A0D6;
+    box-shadow:0 0 0 3px rgba(0,160,214,.15);
+    background:#ffffff;
+  }
+  input::placeholder{
+    color:rgba(26,26,26,.4);
+  }
+  .resultWrap{
+    display:none;
+    background:#f8fafc;
+    border-radius:16px;
+    padding:16px;
+    border:1px solid rgba(0,160,214,.12);
+  }
+  .card{
+    background:#ffffff;
+    border-radius:14px;
+    border:1px solid rgba(0,160,214,.15);
+    box-shadow:0 4px 12px rgba(0,160,214,.06);
+    padding:14px;
+    margin-bottom:10px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card:last-child{
+    margin-bottom:0;
+  }
+  .card:before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    width:4px;
+    height:100%;
+    background:#00A0D6;
+    opacity:0;
+    transition:opacity 0.2s ease;
+  }
+  .card:hover:before{
+    opacity:1;
+  }
+  .topRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .title{
+    font-weight:700;
+    font-size:15px;
+    color:#1a1a1a;
+  }
+  .bracket{
+    font-size:12px;
+    color:rgba(26,26,26,.7);
+    background:rgba(0,160,214,.08);
+    padding:3px 8px;
+    border-radius:10px;
+    border:1px solid rgba(0,160,214,.15);
+  }
+  .midRow{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .label{
+    font-size:14px;
+    color:rgba(26,26,26,.7);
+    font-weight:600;
+  }
+  .price{
+    font-size:22px;
+    font-weight:700;
+    color:#1a1a1a;
+    padding:10px 14px;
+    border-radius:12px;
+    background:rgba(0,160,214,.08);
+    border:2px solid rgba(0,160,214,.2);
+    min-width:120px;
+    text-align:center;
+    transition: all 0.2s ease;
+  }
+  .card:hover .price{
+    background:rgba(0,160,214,.12);
+    border-color:rgba(0,160,214,.3);
+  }
+  .note{
+    font-size:11px;
+    color:rgba(26,26,26,.65);
+    line-height:1.3;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px solid rgba(0,160,214,.1);
+    font-weight:500;
+  }
+  .tiny{
+    font-size:12px;
+    color:rgba(26,26,26,.6);
+    text-align:center;
+    margin-top:12px;
+    padding:10px 14px;
+    background:rgba(0,160,214,.04);
+    border-radius:10px;
+    border:1px solid rgba(0,160,214,.1);
+    display:none;
+  }
+  .tiny.show{
+    display:block;
+  }
+  .status{
+    font-size:12px;
+    color:rgba(26,26,26,.65);
+    text-align:center;
+    min-height:16px;
+    margin-bottom:8px;
+  }
+</style>
+</head>
+
+<body>
+<div class="app" id="app">
+  <h1>POSTNORD</h1>
+  <div class="subtitle">Stable pricing. Sketchy outcome.</div>
+
+  <div class="grid">
+    <input id="postnr" placeholder="POSTNR" inputmode="numeric" />
+    <input id="weight" placeholder="KG" inputmode="decimal" />
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="resultWrap" id="result"></div>
+  <div class="tiny" id="debugTiny"></div>
+</div>
+
+<script>
+  const SHEET_URL = "https://docs.google.com/spreadsheets/d/1qIf98h3QKTJtsOkMNfI6-_bI9cXspt0qi17AIX-pndY/export?format=xlsx";
+  const POSTNUMMER_SHEET_NAME = "Postnummer";
+
+  const el = id => document.getElementById(id);
+
+  let book = null;
+  let postMap = null;
+
+  function setStatus(msg){ el("status").textContent = msg || ""; }
+  function round50(x){ return Math.round(x / 50) * 50; }
+
+  function parseWeightInput(v){
+    const n = parseFloat(String(v || "").replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function zoneFromPostnr(postnr){
+    const pn = Number(postnr);
+    if (!Number.isFinite(pn)) return null;
+    if (pn >= 0 && pn <= 1599) return 1;
+    if (pn >= 1600 && pn <= 2999) return 2;
+    if (pn >= 3000 && pn <= 3999) return 3;
+    if (pn >= 4000 && pn <= 4999) return 4;
+    if (pn >= 5000 && pn <= 5999) return 5;
+    if (pn >= 6000 && pn <= 6999) return 6;
+    if (pn >= 7000 && pn <= 7999) return 7;
+    if (pn >= 8000 && pn <= 8999) return 8;
+    if (pn >= 9000 && pn <= 9999) return 9;
+    return null;
+  }
+
+  function normalizeHeader(s){
+    return String(s ?? "").trim().toLowerCase().replace(/\s+/g," ");
+  }
+
+  function parseRangeLabel(labelRaw){
+    const s = String(labelRaw || "").trim().toLowerCase();
+    if (!s) return null;
+
+    const t = s.replace(/\s+/g,"").replace(/\./g,"").replace(/kg$/,"kg").replace(",", ".");
+    const mSingle = t.match(/^(\d+(?:\.\d+)?)kg$/);
+    if (mSingle){
+      const v = parseFloat(mSingle[1]);
+      return {minKg:v, maxKg:v, label:String(labelRaw).trim()};
+    }
+    const mRange = t.match(/^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)kg$/);
+    if (mRange){
+      const a = parseFloat(mRange[1]);
+      const b = parseFloat(mRange[2]);
+      if (Number.isFinite(a) && Number.isFinite(b)){
+        return {minKg:Math.min(a,b), maxKg:Math.max(a,b), label:String(labelRaw).trim()};
+      }
+    }
+    return null;
+  }
+
+  function buildWeightMeta(grid){
+    let headerRowIndex = null;
+    for (let r=0; r<Math.min(12, grid.length); r++){
+      const row = grid[r] || [];
+      const first = normalizeHeader(row[0]);
+      if (first.includes("vekt/sone") || first === "vekt/sone"){
+        headerRowIndex = r;
+        break;
+      }
+    }
+    if (headerRowIndex == null) headerRowIndex = 0;
+    return { headerRowIndex, dataStartRowIndex: headerRowIndex + 1 };
+  }
+
+  function sheetKind(name){
+    const n = String(name||"").toLowerCase();
+    if (n === String(POSTNUMMER_SHEET_NAME).toLowerCase()) return "postnummer";
+    if (n.includes("collect")) return "collect";
+    if (n.includes("home")) return "home";
+    if (n.includes("pakke") && n.includes("bedrift")) return "pakke_bedrift";
+    if (n.includes("stykkgods")) return "stykkgods";
+    if (n === "pall" || n.includes("pall")) return "pall";
+    return "other";
+  }
+
+  function frontendTitle(sheetName){
+    const k = sheetKind(sheetName);
+    if (k === "collect") return "MyPack Collect<br>(Hent i butikk)";
+    if (k === "home") return "MyPack Home<br>(Hjemlevering)";
+    if (k === "pakke_bedrift") return "Pakke til Bedrift";
+    if (k === "stykkgods") return "Stykkgods";
+    if (k === "pall") return "Pall";
+    return sheetName;
+  }
+
+  function shouldShowSheetForWeight(sheetName, kg){
+    const k = sheetKind(sheetName);
+    if (k === "postnummer") return false;
+
+    if (kg >= 250){
+      return k === "pall";
+    }
+    if (kg > 35){
+      return (k === "stykkgods" || k === "pall");
+    }
+    return !(k === "stykkgods" || k === "pall");
+  }
+
+  function getPallPrices(grid, zone){
+    let headerRow = null;
+    let headerIndex = null;
+
+    for (let r=0; r<Math.min(10, grid.length); r++){
+      const row = grid[r] || [];
+      const joined = row.map(v => normalizeHeader(v)).join(" | ");
+      if (joined.includes("sone") && joined.includes("helpall") && joined.includes("halvpall")){
+        headerRow = row;
+        headerIndex = r;
+        break;
+      }
+    }
+    if (!headerRow) return null;
+
+    const idxSone = headerRow.findIndex(v => normalizeHeader(v) === "sone");
+    const idxHelpall = headerRow.findIndex(v => normalizeHeader(v).includes("helpall"));
+    const idxHalvpall = headerRow.findIndex(v => normalizeHeader(v).includes("halvpall"));
+    if (idxSone < 0 || idxHelpall < 0 || idxHalvpall < 0) return null;
+
+    for (let r = headerIndex + 1; r < grid.length; r++){
+      const row = grid[r] || [];
+      const z = parseInt(row[idxSone], 10);
+      if (z === zone){
+        const helpall = parseFloat(String(row[idxHelpall]).replace(",", "."));
+        const halvpall = parseFloat(String(row[idxHalvpall]).replace(",", "."));
+        return {
+          helpall: Number.isFinite(helpall) ? helpall : null,
+          halvpall: Number.isFinite(halvpall) ? halvpall : null
+        };
+      }
+    }
+    return null;
+  }
+
+  function addPallSurchargeIfNeeded(priceNetto, postnr){
+    const pn = Number(postnr);
+    if (!Number.isFinite(pn)) return priceNetto;
+
+    let add = 0;
+    if (pn >= 9300 && pn <= 9499) add += 250;
+    if (pn >= 9500 && pn <= 9999) add += 250;
+    return priceNetto + add;
+  }
+
+  function findZoneColIndex(headerRow, zone){
+    for (let c=0;c<headerRow.length;c++){
+      const v = String(headerRow[c] ?? "").trim();
+      if (v === String(zone)) return c;
+    }
+    for (let c=0;c<headerRow.length;c++){
+      const v = Number(headerRow[c]);
+      if (v === zone) return c;
+    }
+    return null;
+  }
+
+  function pickVektSoneRow(grid, meta, zoneColIndex, kg){
+    for (let r = meta.dataStartRowIndex; r < grid.length; r++){
+      const row = grid[r] || [];
+      const label = row[0];
+      const pr = parseRangeLabel(label);
+      if (!pr) continue;
+      if (kg >= pr.minKg && kg <= pr.maxKg){
+        const netto = parseFloat(String(row[zoneColIndex]).replace(",", "."));
+        return {
+          label: pr.label,
+          netto: Number.isFinite(netto) ? netto : null
+        };
+      }
+    }
+    return { label:"", netto:null };
+  }
+
+  function buildExactPostnrMap(sheetGrid){
+    const map = Object.create(null);
+    for (let r=0; r<sheetGrid.length; r++){
+      const row = sheetGrid[r] || [];
+      const a = String(row[0] ?? "").trim();
+      const b = String(row[1] ?? "").trim();
+
+      if (normalizeHeader(a) === "postnummer" && normalizeHeader(b) === "poststed") continue;
+
+      const pn = parseInt(a, 10);
+      if (!Number.isFinite(pn) || pn < 0 || pn > 9999) continue;
+      if (!b) continue;
+
+      const key = String(pn).padStart(4, "0");
+      map[key] = b;
+    }
+    return map;
+  }
+
+  function debugLineFor(postnr){
+    if (!postMap) return "";
+    const key = String(postnr).padStart(4, "0");
+    const city = postMap[key];
+    return city ? `${key} • ${city}` : "";
+  }
+
+  function render(results, debugLine){
+    const wrap = el("result");
+    const tiny = el("debugTiny");
+    wrap.innerHTML = "";
+
+    if (!results.length){
+      wrap.style.display = "none";
+      if (debugLine) {
+        tiny.textContent = debugLine;
+        tiny.classList.add("show");
+      } else {
+        tiny.classList.remove("show");
+      }
+      return;
+    }
+
+    for (const item of results){
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const top = document.createElement("div");
+      top.className = "topRow";
+
+      const t = document.createElement("div");
+      t.className = "title";
+      t.innerHTML = item.title;
+
+      const b = document.createElement("div");
+      b.className = "bracket";
+      b.textContent = item.bracket || "";
+
+      top.appendChild(t);
+      top.appendChild(b);
+
+      const mid = document.createElement("div");
+      mid.className = "midRow";
+
+      const lab = document.createElement("div");
+      lab.className = "label";
+      lab.textContent = "Brutto";
+
+      const price = document.createElement("div");
+      price.className = "price";
+      price.textContent = item.brutto !== null ? `${item.brutto} kr` : "-";
+
+      mid.appendChild(lab);
+      mid.appendChild(price);
+
+      card.appendChild(top);
+      card.appendChild(mid);
+
+      if (item.note){
+        const note = document.createElement("div");
+        note.className = "note";
+        note.textContent = item.note;
+        card.appendChild(note);
+      }
+
+      wrap.appendChild(card);
+    }
+
+    wrap.style.display = "block";
+    
+    if (debugLine) {
+      tiny.textContent = debugLine;
+      tiny.classList.add("show");
+    } else {
+      tiny.classList.remove("show");
+    }
+  }
+
+  function calcAndRender(){
+    if (!book) return;
+
+    const postnr = parseInt(el("postnr").value, 10);
+    const kg = parseWeightInput(el("weight").value);
+
+    const debugLine = Number.isFinite(postnr) ? debugLineFor(postnr) : "";
+    
+    if (!Number.isFinite(postnr) || postnr < 0 || postnr > 9999){
+      setStatus("");
+      render([], debugLine);
+      return;
+    }
+    if (kg === null || kg <= 0){
+      setStatus("");
+      render([], debugLine);
+      return;
+    }
+
+    const zone = zoneFromPostnr(postnr);
+    if (!zone){
+      setStatus("");
+      render([], debugLine);
+      return;
+    }
+
+    const results = [];
+
+    for (const s of book.sheets){
+      if (!shouldShowSheetForWeight(s.name, kg)) continue;
+
+      const kind = sheetKind(s.name);
+
+      if ((kind === "collect" || kind === "home" || kind === "pakke_bedrift") && kg > 35){
+        continue;
+      }
+
+      if (kind === "pall"){
+        const p = getPallPrices(s.grid, zone);
+        if (!p) continue;
+
+        if (kg >= 250){
+          const nettoHelp = p.helpall == null ? null : addPallSurchargeIfNeeded(p.helpall, postnr);
+          results.push({
+            title: "Helpall",
+            bracket: "≥ 250 kg",
+            brutto: nettoHelp == null ? null : round50(nettoHelp * 1.5)
+          });
+        } else if (kg > 35){
+          const nettoHalv = p.halvpall == null ? null : addPallSurchargeIfNeeded(p.halvpall, postnr);
+          const nettoHelp = p.helpall == null ? null : addPallSurchargeIfNeeded(p.helpall, postnr);
+
+          results.push({
+            title: "Halvpall",
+            bracket: "35.1–249.9 kg",
+            brutto: nettoHalv == null ? null : round50(nettoHalv * 1.5)
+          });
+          results.push({
+            title: "Helpall",
+            bracket: "≥ 250 kg",
+            brutto: nettoHelp == null ? null : round50(nettoHelp * 1.5)
+          });
+        }
+        continue;
+      }
+
+      const meta = s.meta;
+      const header = s.grid[meta.headerRowIndex] || [];
+      const zoneColIndex = findZoneColIndex(header, zone);
+      if (zoneColIndex == null) continue;
+
+      const picked = pickVektSoneRow(s.grid, meta, zoneColIndex, kg);
+      const brutto = picked.netto == null ? null : round50(picked.netto * 1.5);
+
+      results.push({
+        title: frontendTitle(s.name),
+        bracket: picked.label || "",
+        brutto
+      });
+    }
+
+    // Add note to stykkgods when shown
+    const noteText = "Stykkgods på pall har alltid min. 200 kg beregningsvekt. Halvpall er billigere under ca. 200 kg, men kan bli fakturert som Helpall ved tungt eller uhåndterlig gods.";
+    for (const r of results){
+      if (String(r.title).replace(/<br>/g," ").toLowerCase().includes("stykkgods")){
+        r.note = noteText;
+      }
+    }
+
+    const order = [
+      "MyPack Collect<br>(Hent i butikk)",
+      "MyPack Home<br>(Hjemlevering)",
+      "Pakke til Bedrift",
+      "Stykkgods",
+      "Halvpall",
+      "Helpall"
+    ];
+    results.sort((a,b) => order.indexOf(a.title) - order.indexOf(b.title));
+
+    setStatus("");
+    render(results, debugLine);
+  }
+
+  let debounceT = null;
+  function scheduleCalc(){
+    clearTimeout(debounceT);
+    debounceT = setTimeout(calcAndRender, 80);
+  }
+
+  async function loadPrices(){
+    try{
+      const res = await fetch(SHEET_URL, {cache:"no-store"});
+      if (!res.ok) throw new Error("fetch failed");
+      const buf = await res.arrayBuffer();
+
+      const wb = XLSX.read(buf, {type:"array"});
+      const sheets = [];
+      let postSheetGrid = null;
+
+      for (const name of wb.SheetNames){
+        const ws = wb.Sheets[name];
+        const grid = XLSX.utils.sheet_to_json(ws, {header:1, raw:true});
+
+        if (String(name).trim().toLowerCase() === String(POSTNUMMER_SHEET_NAME).trim().toLowerCase()){
+          postSheetGrid = grid;
+          continue;
+        }
+
+        sheets.push({ name, grid, meta: buildWeightMeta(grid) });
+      }
+
+      postMap = postSheetGrid ? buildExactPostnrMap(postSheetGrid) : null;
+      book = { sheets };
+
+      scheduleCalc();
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  el("postnr").addEventListener("input", scheduleCalc);
+  el("weight").addEventListener("input", scheduleCalc);
+
+  window.addEventListener("DOMContentLoaded", loadPrices);
+</script>
+</body>
+</html>

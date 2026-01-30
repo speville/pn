@@ -554,7 +554,7 @@
     }
 
     // Add note to stykkgods when shown
-    const noteText = "Stykkgods på pall har alltid min. 200 kg beregningsvekt. Halvpall er billigere under ca. 200 kg, men kan bli fakturert som Helpall ved tungt eller uhåndterlig gods.";
+    const noteText = "For tanker 440 L, ramper, sliteribber og tilsvarende lange eller uhåndterlige produkter skal alltid fraktmetoden Stykkgods velges (Overdimensjonert i Rackbeat), uavhengig av vekt.";
     for (const r of results){
       if (String(r.title).replace(/<br>/g," ").toLowerCase().includes("stykkgods")){
         r.note = noteText;

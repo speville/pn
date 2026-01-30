@@ -554,7 +554,7 @@
     }
 
     // Add note to stykkgods when shown
-    const noteText = "For tanker 440 L, ramper, sliteribber og tilsvarende lange eller uhåndterlige produkter skal alltid fraktmetoden Stykkgods velges (Overdimensjonert i Rackbeat), uavhengig av vekt. Det legges i tillegg på +250 kr, da PostNord normalt belaster spesialhåndteringsavgift for lange/uhåndterlige kolli.";
+    const noteText = "For tanker på 440 L, ramper, sliteribber og tilsvarende lange eller formmessig uhåndterlige produkter skal sendingen alltid registreres som Stykkgods / Overdimensjonert (i Rackbeat), uavhengig av vekt. Stykkgods-prisene skal ikke brukes som prisreferanse for disse varene. Prisingen baseres alltid på Halvpall, med et fast påslag på 500 kr for å dekke forventet spesialhåndtering fra PostNord.";
     for (const r of results){
       if (String(r.title).replace(/<br>/g," ").toLowerCase().includes("stykkgods")){
         r.note = noteText;
